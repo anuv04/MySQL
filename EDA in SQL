@@ -1,0 +1,106 @@
+# Exploratory Data Analysis
+
+SELECT * 
+FROM layoffs_staging_2;
+
+SELECT MAX(total_laid_off), Max(percentage_laid_off)
+FROM layoffs_staging_2
+ORDER BY 1 DESC;
+
+SELECT *
+FROM layoffs_staging_2
+WHERE percentage_laid_off = 1
+ORDER BY total_laid_off DESC;
+
+SELECT industry, SUM(total_laid_off)
+FROM layoffs_staging_2
+GROUP BY 1
+ORDER BY 1,2 DESC;
+
+SELECT country, SUM(total_laid_off)
+FROM layoffs_staging_2
+GROUP BY 1
+ORDER BY 1,2 DESC;
+
+SELECT MIN(`date`), MAX(`date`)
+FROM layoffs_staging_2;
+
+SELECT YEAR(`date`), SUM(total_laid_off)
+FROM layoffs_staging_2
+GROUP BY 1
+ORDER BY 1 DESC,2 DESC;
+
+SELECT stage, SUM(total_laid_off)
+FROM layoffs_staging_2
+GROUP BY 1
+ORDER BY 1, 2 DESC;
+
+
+WITH Laid_off_monthly AS
+(
+SELECT SUBSTRING(`date`, 1,7) AS `MONTH`, 
+SUM(total_laid_off) as total_laid_off_monthly
+FROM layoffs_staging_2
+WHERE SUBSTRING(`date`, 1,7) IS NOT NULL
+GROUP BY 1 
+ORDER BY 1 ASC
+)
+SELECT 
+`MONTH`, 
+total_laid_off_monthly,
+SUM(total_laid_off_monthly) OVER(ORDER BY `MONTH`) as Rolling_Sum_laid_off
+FROM Laid_off_monthly;
+
+SELECT company, YEAR(`date`) as date_year, total_laid_off,
+RANK() OVER (PARTITION BY company ORDER BY YEAR(`date`),total_laid_off DESC) as Rnk
+FROM layoffs_staging_2
+WHERE total_laid_off IS NOT NULL and company = 'Amazon'
+ORDER BY YEAR(`date`);
+
+WITH yearly_layoffs AS
+(
+SELECT company, YEAR(`date`) as date_year, SUM(total_laid_off) AS total_yearly_layoffs
+FROM layoffs_staging_2
+GROUP BY 1, 2
+),
+Company_year_Rank AS 
+(
+SELECT company, date_year, total_yearly_layoffs,
+DENSE_RANK() OVER(PARTITION BY date_year ORDER BY total_yearly_layoffs DESC) AS yearly_layoff_rank
+FROM yearly_layoffs
+WHERE date_year IS NOT NULL 
+#company = 'Amazon';
+)
+SELECT *
+FROM company_year_rank
+WHERE yearly_layoff_rank <= 5;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
